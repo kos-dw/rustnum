@@ -1,0 +1,8 @@
+/target
+/migrations
+.env
+.envrc
+.tmp
+.vscode
+.bak
+.DS_Store
