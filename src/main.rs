@@ -23,7 +23,6 @@ mod utils;
 
 use crate::structs::Env;
 use clap::Parser;
-use std::path::Path;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
@@ -32,21 +31,26 @@ async fn main() -> Result<(), sqlx::Error> {
     // sqlxを使用してデータベースのプールを作成
     let pool = utils::create_pool(&env.database).await?;
 
-    // ターゲットディレクトリとディレクトリ名を取得
-    let root = Path::new(&env.root);
-    let root = root.canonicalize().unwrap();
-    let root_filename = root.file_name().unwrap().to_string_lossy().into_owned();
-    let root_path = root.to_string_lossy().into_owned();
-    println!("Target directory is: {}\n", &root_path);
+    let (root_name, root_path, init_num, is_new) = utils::prepares_root_dir(&env.root);
+
+    if is_new {
+        println!("Target directory does not exist.");
+        println!("Create new directory: {}\n", root_path.display());
+    } else {
+        println!("Target directory is: {}\n", root_path.display());
+    }
+
+    // レコードが存在しなければ新規作成
+    utils::insert_record(&pool, &env.table, &root_name, init_num).await?;
 
     // データベースから現在のディレクトリ番号を取得
-    let record = utils::get_records(&pool, &env.table, &root_filename).await?;
+    let record = utils::get_records(&pool, &env.table, &root_name).await?;
 
     // ディレクトリを作成
     let update_num = utils::dir_fuctory(record.current_number, &root_path);
 
     // データベースのレコード現在のディレクトリ番号を更新
-    utils::update_record(&pool, &env.table, &root_filename, update_num).await?;
+    utils::update_record(&pool, &env.table, &root_name, update_num).await?;
 
     Ok(())
 }
