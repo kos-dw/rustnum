@@ -48,7 +48,7 @@ pub struct Env {
 /// また、`dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
 ///
 #[derive(FromRow, Debug)]
-pub struct Number {
+pub struct Record {
     pub dir_id: i64,
     pub dir_name: String,
     pub current_number: i64,

@@ -3,7 +3,7 @@
 //! # Example
 //!
 //! ```bash
-//! $ cargo run -- --database sqlite:./test.db --table numbers --root ./test
+//! $ cargo run -- -d sqlite:./test.db -t numbers -r ./test
 //! ```
 //!
 //! # Environment Variables
@@ -14,9 +14,9 @@
 //!
 //! # Arguments
 //!
-//! * `--database` - Database URL
-//! * `--table` - Table name
-//! * `--root` - Root directory
+//! * `--database`, `-d` - Database URL
+//! * `--table`, `-t` - Table name
+//! * `--root`, `-r` - Root directory
 
 mod structs;
 mod utils;
@@ -37,16 +37,16 @@ async fn main() -> Result<(), sqlx::Error> {
     let root = root.canonicalize().unwrap();
     let root_filename = root.file_name().unwrap().to_string_lossy().into_owned();
     let root_path = root.to_string_lossy().into_owned();
-    println!("Target directory is: {}\n", root_path);
+    println!("Target directory is: {}\n", &root_path);
 
     // データベースから現在のディレクトリ番号を取得
-    let number = utils::get_records(&pool, &env.table, &root_filename).await?;
+    let record = utils::get_records(&pool, &env.table, &root_filename).await?;
 
     // ディレクトリを作成
-    let update_num = utils::dir_fuctory(number.current_number, &root_path);
+    let update_num = utils::dir_fuctory(record.current_number, &root_path);
 
     // データベースのレコード現在のディレクトリ番号を更新
-    utils::update_record(&pool, &env.table, &root_filename, &update_num).await?;
+    utils::update_record(&pool, &env.table, &root_filename, update_num).await?;
 
     Ok(())
 }
