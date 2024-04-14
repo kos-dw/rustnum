@@ -6,7 +6,7 @@
 //! - dir_fuctory: データベースから取得した現在の連番を元に、ディレクトリを作成
 //!
 
-use crate::structs::Number;
+use crate::structs::Record;
 use sqlx::sqlite::SqlitePool;
 use std::fs;
 use std::io::{stdin, stdout, Write};
@@ -44,22 +44,22 @@ pub async fn create_pool(db_url: &String) -> Result<SqlitePool, sqlx::Error> {
 /// * `dir_name` - ルートディレクトリ名
 ///
 /// # Returns
-/// `Result<Number, sqlx::Error>` - レコード
+/// `Result<Record, sqlx::Error>` - レコード
 ///
 /// # Note
 /// `dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
 ///  
 pub async fn get_records(
     pool: &SqlitePool,
-    table_name: &String,
-    dir_name: &String,
-) -> Result<Number, sqlx::Error> {
+    table_name: &str,
+    dir_name: &str,
+) -> Result<Record, sqlx::Error> {
     let query = format!(
         r#"SELECT dir_id, dir_name, current_number FROM {} WHERE dir_name="{}";"#,
         table_name, dir_name
     );
-    let number = sqlx::query_as::<_, Number>(&query).fetch_one(pool).await?;
-    Ok(number)
+    let record = sqlx::query_as::<_, Record>(&query).fetch_one(pool).await?;
+    Ok(record)
 }
 
 /// sqlxを使用してデータベースのレコードを更新
@@ -75,9 +75,9 @@ pub async fn get_records(
 ///
 pub async fn update_record(
     pool: &SqlitePool,
-    table_name: &String,
-    dir_name: &String,
-    current_number: &i64,
+    table_name: &str,
+    dir_name: &str,
+    current_number: i64,
 ) -> Result<(), sqlx::Error> {
     let query = format!(
         r#"UPDATE {} SET current_number={} WHERE dir_name="{}";"#,
@@ -96,7 +96,7 @@ pub async fn update_record(
 /// # Returns
 /// `i64` - 更新された番号
 ///
-pub fn dir_fuctory(current_number: i64, root_dir: &String) -> i64 {
+pub fn dir_fuctory(current_number: i64, root_dir: &str) -> i64 {
     let mut new_number = current_number.clone();
     let update_num = loop {
         print!("Enter your project name... \n-> ");
@@ -104,7 +104,7 @@ pub fn dir_fuctory(current_number: i64, root_dir: &String) -> i64 {
 
         let ipt = get_input();
         if ipt == "exit" {
-            println!("\nGoodbye！\n");
+            println!("\nGoodbye!\n");
             stdout().flush().unwrap();
             break new_number;
         }
