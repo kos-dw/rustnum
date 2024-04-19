@@ -1,4 +1,4 @@
-name: Auto approve
+name: "Auto-approve PR"
 
 on:
   pull_request:
@@ -8,11 +8,13 @@ on:
       - synchronize
       - ready_for_review
 
+permissions:
+  pull-requests: write
+
 jobs:
-  auto-approve:
+  main:
+    name: "Auto-approve PR"
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     if: |
       github.event.pull_request.user.login == github.repository_owner
       && ! github.event.pull_request.draft
