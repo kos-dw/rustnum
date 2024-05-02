@@ -24,13 +24,13 @@ mod utils;
 use crate::structs::Env;
 use clap::Parser;
 use utils::props_provider as provider;
+use utils::DatabaseHandler as DH;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let env = Env::parse();
 
-    // sqlxを使用してデータベースのプールを作成
-    let pool = utils::create_pool(&env.database).await?;
+    let dh = DH::new(&env.database, &env.table, &env.root).await.unwrap();
 
     let (root_path, init_num, is_new) = provider(&env.root);
 
@@ -42,16 +42,16 @@ async fn main() -> Result<(), sqlx::Error> {
     }
 
     // レコードが存在しなければ新規作成
-    utils::insert_record(&pool, &env.table, &root_name, init_num).await?;
+    dh.insert(init_num).await?;
 
     // データベースから現在のディレクトリ番号を取得
-    let record = utils::get_records(&pool, &env.table, &root_name).await?;
+    let record = dh.get().await?;
 
     // ディレクトリを作成
-    let update_num = utils::dir_fuctory(record.current_number, &root_path);
+    let update_num = fuctory(record.current_number, &root_path);
 
     // データベースのレコード現在のディレクトリ番号を更新
-    utils::update_record(&pool, &env.table, &root_name, update_num).await?;
+    dh.update(update_num).await?;
 
     Ok(())
 }
