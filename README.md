@@ -1,15 +1,11 @@
 # rustnum
 
-データベースに保存されている現在のディレクトリ番号を取得し、連番でディレクトリを作成します。
-
----
+データベースに保存されている現在のディレクトリ番号を取得し、連番でディレクトリを作成します。  
 
 ## What's this?
 
-sqlite3に保存されている現在のディレクトリ番号を取得し、連番でディレクトリを作成します。作成後、データベースに新しいディレクトリ番号を保存します。
-プロダクトとかでプレフィックスが被らないように、一意の命名規則を設定します。
-
----
+sqlite3に保存されている現在のディレクトリ番号を取得し、連番でディレクトリを作成します。作成後、データベースに新しいディレクトリ番号を保存します。  
+プロダクトとかでプレフィックスが被らないように、一意の命名規則を設定します。  
 
 ## Usage
 
@@ -88,10 +84,9 @@ cargo build --release
 ./target/release/rustnum -r 10000_test -d .db/db.sqlite -t "NUMBERS"
 ```
 
--d, --database <DATABASE>       データベースまでのパス
--t, --table <TABLE>             テーブル名
--r, --root <ROOT>               ルートディレクトリ
-
+-d, --database データベースまでのパス  
+-t, --table テーブル名  
+-r, --root ルートディレクトリ  
 
 ## Note
 
@@ -103,9 +98,11 @@ RUSTNUM_TABLE_NAME=.db/db.sqlite # 別フォルダで実行する場合は絶対
 RUSTNUM_CREATE_ROOT="NUMBERS"
 ```
 
-また、PATHを通しておくと、どこからでも実行できて便利。
+また、PATHを通しておくと、実行ファイル名だけでどこからでも実行できて便利。
 
 ```bash
 export PATH=$PATH:/path/to/rustnum
+
+rustnum -r 10000_test -d .db/db.sqlite -t "NUMBERS"
 ```
 
