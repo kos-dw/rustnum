@@ -1,10 +1,4 @@
 //! ユーティリティ関数を提供するモジュール
-//! - get_input: 標準入力を取得
-//! - create_pool: sqlxを使用してデータベースのプールを作成
-//! - get_records: sqlxを使用してデータベースからレコードを取得
-//! - update_record: sqlxを使用してデータベースのレコードを更新
-//! - dir_fuctory: データベースから取得した現在の連番を元に、ディレクトリを作成
-//!
 
 use crate::structs::Record;
 use sqlx::sqlite::SqlitePool;
@@ -29,9 +23,9 @@ pub fn get_input() -> String {
 /// * `path_str` - ルートディレクトリのパス
 ///
 /// # Returns
-/// `(String, PathBuf, i64, bool)` - (ルートディレクトリ名, ルートディレクトリの絶対パス, 初期値, ディレクトリ新規作成フラグ)
+/// `(PathBuf, i64, bool)` - (ルートディレクトリ名, ルートディレクトリの絶対パス, 初期値, ディレクトリ新規作成フラグ)
 ///
-pub fn prepares_root_dir(path_str: &str) -> (String, PathBuf, i64, bool) {
+pub fn props_provider(path_str: &str) -> (PathBuf, i64, bool) {
     let path = std::path::Path::new(path_str);
 
     // ルートディレクトリ名を取得
@@ -53,98 +47,91 @@ pub fn prepares_root_dir(path_str: &str) -> (String, PathBuf, i64, bool) {
         .parse::<i64>()
         .unwrap();
 
-    (root_name, root_path, initial_number, is_new)
+    (root_path, initial_number, is_new)
 }
 
-/// sqlxを使用してデータベースのプールを作成
+/// データベースハンドラ
 ///
-/// # Arguments
-/// * `db_url` - データベースのURL
-///
-/// # Returns
-/// `Result<SqlitePool, sqlx::Error>` - データベースのプール
-///
-pub async fn create_pool(db_url: &String) -> Result<SqlitePool, sqlx::Error> {
-    let pool = SqlitePool::connect(db_url).await?;
-    Ok(pool)
-}
-
-/// sqlxを使用してデータベースからレコードを取得
-///
-/// # Arguments
-/// * `pool` - データベースのプール
+/// # Fields
+/// * `pool` - データベースプール
 /// * `table_name` - テーブル名
-/// * `dir_name` - ルートディレクトリ名
-///
-/// # Returns
-/// `Result<Record, sqlx::Error>` - レコード
-///
-/// # Note
-/// `dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
-///  
-pub async fn get_records(
-    pool: &SqlitePool,
-    table_name: &str,
-    dir_name: &str,
-) -> Result<Record, sqlx::Error> {
-    let query = format!(
-        r#"SELECT dir_id, dir_name, current_number FROM {} WHERE dir_name="{}";"#,
-        table_name, dir_name
-    );
-    let record = sqlx::query_as::<_, Record>(&query).fetch_one(pool).await?;
-    Ok(record)
-}
-
-/// sqlxを使用してデータベースのレコードを更新
-///
-/// # Arguments
-/// * `pool` - データベースのプール
-/// * `table_name` - テーブル名
-/// * `dir_name` - ルートディレクトリ名
-/// * `current_number` - 現在の番号
+/// * `dir_name` - ディレクトリ名
 ///
 /// # Note
 /// `dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
 ///
-pub async fn update_record(
-    pool: &SqlitePool,
-    table_name: &str,
-    dir_name: &str,
-    current_number: i64,
-) -> Result<(), sqlx::Error> {
-    let query = format!(
-        r#"UPDATE {} SET current_number={} WHERE dir_name="{}";"#,
-        table_name, current_number, dir_name
-    );
-    sqlx::query(&query).execute(pool).await?;
-    Ok(())
+pub struct DatabaseHandler<'a> {
+    pool: SqlitePool,
+    table_name: &'a str,
+    dir_name: &'a str,
 }
 
-/// sqlxを使用してデータベースにレコードを追加
+/// データベースハンドラの実装
 ///
-/// # Arguments
-/// * `pool` - データベースのプール
-/// * `table_name` - テーブル名
-/// * `dir_name` - ルートディレクトリ名
-/// * `current_number` - 現在の番号
+/// # Methods
+/// * `new` - データベースハンドラを初期化
+/// * `get` - データベースからレコードを取得
+/// * `update` - データベースのレコードを更新
+/// * `insert` - データベースにレコードを追加
 ///
-/// # Note
-/// `dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
-///
-pub async fn insert_record(
-    pool: &SqlitePool,
-    table_name: &str,
-    dir_name: &str,
-    current_number: i64,
-) -> Result<(), sqlx::Error> {
-    let query = format!(
-        r#"INSERT INTO {} (dir_name, current_number) 
-        SELECT "{}", {} WHERE NOT EXISTS 
-        (SELECT * FROM {} WHERE dir_name = "{}");"#,
-        table_name, dir_name, current_number, table_name, dir_name
-    );
-    sqlx::query(&query).execute(pool).await?;
-    Ok(())
+impl<'a> DatabaseHandler<'a> {
+    pub async fn new(
+        db_url: &'a str,
+        table_name: &'a str,
+        dir_name: &'a str,
+    ) -> Result<Self, sqlx::Error> {
+        Ok(Self {
+            pool: SqlitePool::connect(db_url).await?,
+            table_name,
+            dir_name,
+        })
+    }
+
+    /// sqlxを使用してデータベースからレコードを取得
+    ///
+    /// # Returns
+    /// `Result<Record, sqlx::Error>` - レコード
+    ///
+    pub async fn get(&self) -> Result<Record, sqlx::Error> {
+        let query = format!(
+            r#"SELECT dir_id, dir_name, current_number FROM {} WHERE dir_name="{}";"#,
+            self.table_name, self.dir_name
+        );
+        let record = sqlx::query_as::<_, Record>(&query)
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(record)
+    }
+
+    /// sqlxを使用してデータベースのレコードを更新
+    ///
+    /// # Arguments
+    /// * `current_number` - 現在の番号
+    ///
+    pub async fn update(&self, current_number: i64) -> Result<(), sqlx::Error> {
+        let query = format!(
+            r#"UPDATE {} SET current_number={} WHERE dir_name="{}";"#,
+            self.table_name, current_number, self.dir_name
+        );
+        sqlx::query(&query).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    /// sqlxを使用してデータベースにレコードを追加
+    ///
+    /// # Arguments
+    /// * `current_number` - 現在の番号
+    ///
+    pub async fn insert(&self, current_number: i64) -> Result<(), sqlx::Error> {
+        let query = format!(
+            r#"INSERT INTO {} (dir_name, current_number) 
+            SELECT "{}", {} WHERE NOT EXISTS 
+            (SELECT * FROM {} WHERE dir_name = "{}");"#,
+            self.table_name, self.dir_name, current_number, self.table_name, self.dir_name
+        );
+        sqlx::query(&query).execute(&self.pool).await?;
+        Ok(())
+    }
 }
 
 /// データベースから取得した現在の連番を元に、ディレクトリを作成
