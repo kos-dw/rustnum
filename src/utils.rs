@@ -1,10 +1,4 @@
 //! ユーティリティ関数を提供するモジュール
-//! - get_input: 標準入力を取得
-//! - create_pool: sqlxを使用してデータベースのプールを作成
-//! - get_records: sqlxを使用してデータベースからレコードを取得
-//! - update_record: sqlxを使用してデータベースのレコードを更新
-//! - dir_fuctory: データベースから取得した現在の連番を元に、ディレクトリを作成
-//!
 
 use crate::structs::Record;
 use sqlx::sqlite::SqlitePool;
@@ -65,7 +59,7 @@ pub fn props_provider(path_str: &str) -> (PathBuf, i64, bool) {
 ///
 /// # Note
 /// `dir_name`はディレクトリのパスではなく、ディレクトリ名を表します。
-///  
+///
 pub struct DatabaseHandler<'a> {
     pool: SqlitePool,
     table_name: &'a str,
@@ -99,44 +93,44 @@ impl<'a> DatabaseHandler<'a> {
     /// `Result<Record, sqlx::Error>` - レコード
     ///
     pub async fn get(&self) -> Result<Record, sqlx::Error> {
-    let query = format!(
-        r#"SELECT dir_id, dir_name, current_number FROM {} WHERE dir_name="{}";"#,
+        let query = format!(
+            r#"SELECT dir_id, dir_name, current_number FROM {} WHERE dir_name="{}";"#,
             self.table_name, self.dir_name
-    );
+        );
         let record = sqlx::query_as::<_, Record>(&query)
             .fetch_one(&self.pool)
             .await?;
-    Ok(record)
-}
+        Ok(record)
+    }
 
-/// sqlxを使用してデータベースのレコードを更新
-///
-/// # Arguments
-/// * `current_number` - 現在の番号
-///
+    /// sqlxを使用してデータベースのレコードを更新
+    ///
+    /// # Arguments
+    /// * `current_number` - 現在の番号
+    ///
     pub async fn update(&self, current_number: i64) -> Result<(), sqlx::Error> {
-    let query = format!(
-        r#"UPDATE {} SET current_number={} WHERE dir_name="{}";"#,
+        let query = format!(
+            r#"UPDATE {} SET current_number={} WHERE dir_name="{}";"#,
             self.table_name, current_number, self.dir_name
-    );
+        );
         sqlx::query(&query).execute(&self.pool).await?;
-    Ok(())
-}
+        Ok(())
+    }
 
-/// sqlxを使用してデータベースにレコードを追加
-///
-/// # Arguments
-/// * `current_number` - 現在の番号
-///
+    /// sqlxを使用してデータベースにレコードを追加
+    ///
+    /// # Arguments
+    /// * `current_number` - 現在の番号
+    ///
     pub async fn insert(&self, current_number: i64) -> Result<(), sqlx::Error> {
-    let query = format!(
-        r#"INSERT INTO {} (dir_name, current_number) 
-        SELECT "{}", {} WHERE NOT EXISTS 
-        (SELECT * FROM {} WHERE dir_name = "{}");"#,
+        let query = format!(
+            r#"INSERT INTO {} (dir_name, current_number) 
+            SELECT "{}", {} WHERE NOT EXISTS 
+            (SELECT * FROM {} WHERE dir_name = "{}");"#,
             self.table_name, self.dir_name, current_number, self.table_name, self.dir_name
-    );
+        );
         sqlx::query(&query).execute(&self.pool).await?;
-    Ok(())
+        Ok(())
     }
 }
 
