@@ -29,9 +29,9 @@ pub fn get_input() -> String {
 /// * `path_str` - ルートディレクトリのパス
 ///
 /// # Returns
-/// `(String, PathBuf, i64, bool)` - (ルートディレクトリ名, ルートディレクトリの絶対パス, 初期値, ディレクトリ新規作成フラグ)
+/// `(PathBuf, i64, bool)` - (ルートディレクトリ名, ルートディレクトリの絶対パス, 初期値, ディレクトリ新規作成フラグ)
 ///
-pub fn prepares_root_dir(path_str: &str) -> (String, PathBuf, i64, bool) {
+pub fn props_provider(path_str: &str) -> (PathBuf, i64, bool) {
     let path = std::path::Path::new(path_str);
 
     // ルートディレクトリ名を取得
@@ -53,7 +53,7 @@ pub fn prepares_root_dir(path_str: &str) -> (String, PathBuf, i64, bool) {
         .parse::<i64>()
         .unwrap();
 
-    (root_name, root_path, initial_number, is_new)
+    (root_path, initial_number, is_new)
 }
 
 /// sqlxを使用してデータベースのプールを作成

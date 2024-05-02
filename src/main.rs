@@ -23,6 +23,7 @@ mod utils;
 
 use crate::structs::Env;
 use clap::Parser;
+use utils::props_provider as provider;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
@@ -31,7 +32,7 @@ async fn main() -> Result<(), sqlx::Error> {
     // sqlxを使用してデータベースのプールを作成
     let pool = utils::create_pool(&env.database).await?;
 
-    let (root_name, root_path, init_num, is_new) = utils::prepares_root_dir(&env.root);
+    let (root_path, init_num, is_new) = provider(&env.root);
 
     if is_new {
         println!("Target directory does not exist.");
