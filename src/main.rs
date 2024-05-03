@@ -23,9 +23,9 @@ mod utils;
 
 use crate::structs::Env;
 use clap::Parser;
+use utils::db_manager::Handler as DH;
 use utils::dir_fuctory as fuctory;
 use utils::props_provider as provider;
-use utils::DatabaseHandler as DH;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
