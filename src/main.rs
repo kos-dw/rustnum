@@ -22,18 +22,19 @@ mod structs;
 mod utils;
 
 use crate::structs::Env;
+use anyhow::Result;
 use clap::Parser;
+use utils::db_manager::Handler as DH;
 use utils::dir_fuctory as fuctory;
 use utils::props_provider as provider;
-use utils::DatabaseHandler as DH;
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
+async fn main() -> Result<()> {
     let env = Env::parse();
 
-    let dh = DH::new(&env.database, &env.table, &env.root).await.unwrap();
+    let dh = DH::new(&env.database, &env.table, &env.root).await?;
 
-    let (root_path, init_num, is_new) = provider(&env.root);
+    let (root_path, init_num, is_new) = provider(&env.root)?;
 
     if is_new {
         println!("Target directory does not exist.");
@@ -49,7 +50,7 @@ async fn main() -> Result<(), sqlx::Error> {
     let record = dh.get().await?;
 
     // ディレクトリを作成
-    let update_num = fuctory(record.current_number, &root_path);
+    let update_num = fuctory(record.current_number, &root_path)?;
 
     // データベースのレコード現在のディレクトリ番号を更新
     dh.update(update_num).await?;
