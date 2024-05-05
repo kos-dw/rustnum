@@ -1,4 +1,5 @@
 //! ユーティリティ関数を提供するモジュール
+use anyhow::Result;
 use core::panic;
 use std::fs;
 use std::io::{stdin, stdout, Write};
@@ -14,7 +15,10 @@ pub mod db_manager;
 ///
 pub fn get_input() -> String {
     let mut input = String::new();
-    stdin().read_line(&mut input).unwrap();
+    match stdin().read_line(&mut input) {
+        Ok(_) => {}
+        Err(e) => panic!("An error has occurred: {:?}", e),
+    };
     input.trim().to_string()
 }
 
@@ -24,35 +28,35 @@ pub fn get_input() -> String {
 /// * `path_str` - ルートディレクトリのパス
 ///
 /// # Returns
-/// `(PathBuf, i64, bool)` - (ルートディレクトリ名, ルートディレクトリの絶対パス, 初期値, ディレクトリ新規作成フラグ)
+/// `Result<(PathBuf, i64, bool)>` - ルートディレクトリのパス、初期番号、新規作成フラグ
 ///
-pub fn props_provider(path_str: &str) -> (PathBuf, i64, bool) {
+pub fn props_provider(path_str: &str) -> Result<(PathBuf, i64, bool)> {
     let path = std::path::Path::new(path_str);
 
     // ルートディレクトリ名を取得
     let root_name = match path.file_name() {
         Some(name) => name.to_str().unwrap(),
-        None => panic!("Root directory name is not found."),
+        None => panic!("Creating a directory requires a root name."),
     };
 
     // ディレクトリ新規作成フラグを取得
     let is_new = !path.exists();
 
     // ルートディレクトリが存在しない場合、新規でディレクトリを作成
-    #[allow(unused_must_use)]
     if is_new {
-        fs::create_dir_all(&path);
+        fs::create_dir_all(&path)?;
     }
 
     // ルートディレクトリのパスを取得
-    let root_path = path.canonicalize().unwrap();
+    let root_path = path.canonicalize()?;
 
     // ルートディレクトリ名を連番とプロジェクト名に分割
-    let initial_number = root_name.split('_').collect::<Vec<&str>>()[0]
-        .parse::<i64>()
-        .unwrap();
+    let initial_number = match root_name.split('_').next() {
+        Some(num) => num.parse::<i64>().unwrap(),
+        None => panic!("Can't parse to number."),
+    };
 
-    (root_path, initial_number, is_new)
+    Ok((root_path, initial_number, is_new))
 }
 
 /// データベースから取得した現在の連番を元に、ディレクトリを作成
@@ -62,9 +66,9 @@ pub fn props_provider(path_str: &str) -> (PathBuf, i64, bool) {
 /// * `root_dir` - ルートディレクトリ
 ///
 /// # Returns
-/// `i64` - 更新された番号
+/// `Result<i64>` - 更新後の番号
 ///
-pub fn dir_fuctory(current_number: i64, root_dir: &PathBuf) -> i64 {
+pub fn dir_fuctory(current_number: i64, root_dir: &PathBuf) -> Result<i64> {
     let mut new_number = current_number;
     let update_num = loop {
         print!("Enter your project name... \n-> ");
@@ -91,5 +95,5 @@ pub fn dir_fuctory(current_number: i64, root_dir: &PathBuf) -> i64 {
         };
     };
 
-    update_num
+    Ok(update_num)
 }
